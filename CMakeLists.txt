@@ -32,7 +32,15 @@ FetchContent_Declare(
     GIT_TAG v1.89.4
 )
 
-FetchContent_MakeAvailable(glfw glad glm imgui)
+# Fetch contents
+FetchContent_MakeAvailable(glfw glm imgui)
+
+# Fetch and build glad manually
+FetchContent_GetProperties(glad)
+if(NOT glad_POPULATED)
+    FetchContent_Populate(glad)
+    add_subdirectory(${glad_SOURCE_DIR} ${glad_BINARY_DIR})
+endif()
 
 # Find OpenMP for parallel processing
 find_package(OpenMP)
@@ -52,30 +60,26 @@ add_library(imgui STATIC ${IMGUI_SRC})
 target_include_directories(imgui PUBLIC ${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/backends)
 target_link_libraries(imgui PRIVATE glfw glad)
 
-
 set(NBODY_SRC
     src/renderer.cpp
-    src/particle.cpp
-    src/octree.cpp
-    src/nbody_system.cpp
-    src/camera.cpp
 )
 
-
 set(SHADER_FILES
-    src/particle.vs
-    src/particle.fs
+    src/galaxy.vert
+    src/galaxy.frag
+    src/blur.vert
+    src/blur.frag
+    src/post.vert
+    src/post.frag
 )
 
 # Add executable
 add_executable(OpenGLApp ${NBODY_SRC})
 
-
 target_include_directories(OpenGLApp PRIVATE 
     ${CMAKE_SOURCE_DIR}/src
     ${glm_SOURCE_DIR}
 )
-
 
 target_link_libraries(OpenGLApp PRIVATE 
     glfw 
@@ -85,12 +89,13 @@ target_link_libraries(OpenGLApp PRIVATE
     $<$<BOOL:${OpenMP_CXX_FOUND}>:OpenMP::OpenMP_CXX>
 )
 
-
+# Copy shader files to build directory
 foreach(SHADER ${SHADER_FILES})
+    get_filename_component(SHADER_NAME ${SHADER} NAME)
     add_custom_command(
         TARGET OpenGLApp POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy
         ${CMAKE_SOURCE_DIR}/${SHADER}
-        ${CMAKE_BINARY_DIR}/${SHADER}
+        ${CMAKE_BINARY_DIR}/${SHADER_NAME}
     )
 endforeach()
