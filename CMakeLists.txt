@@ -1,9 +1,14 @@
-cmake_minimum_required(VERSION 3.16)
-project(OpenGLProject)
+cmake_minimum_required(VERSION 3.18)
+project(OpenGLProject LANGUAGES CXX CUDA)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_BUILD_TYPE Debug)  # Add debug symbols for development
+set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_CUDA_STANDARD 14)
+set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+
+# Set CUDA architecture to match your RTX 4050 (compute capability 8.6)
+set(CMAKE_CUDA_ARCHITECTURES 86)
 
 include(FetchContent)
 
@@ -60,7 +65,13 @@ add_library(imgui STATIC ${IMGUI_SRC})
 target_include_directories(imgui PUBLIC ${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/backends)
 target_link_libraries(imgui PRIVATE glfw glad)
 
-set(NBODY_SRC
+# CUDA source files - these will be compiled with NVCC
+set(CUDA_SRC
+    src/cuda_nbody.cu
+)
+
+# Regular C++ sources
+set(CPP_SRC
     src/renderer.cpp
 )
 
@@ -74,7 +85,7 @@ set(SHADER_FILES
 )
 
 # Add executable
-add_executable(OpenGLApp ${NBODY_SRC})
+add_executable(OpenGLApp ${CPP_SRC} ${CUDA_SRC})
 
 target_include_directories(OpenGLApp PRIVATE 
     ${CMAKE_SOURCE_DIR}/src
