@@ -90,45 +90,45 @@ public:
     }
 
     void update()
+{
+    if (!particles || particles->size() == 0 || !gpuInitialized)
     {
-        if (!particles || particles->size() == 0 || !gpuInitialized)
-        {
-            return;
-        }
-
-        startTime = std::chrono::high_resolution_clock::now();
-        auto currentTime = startTime;
-
-        copyParticlesToGPU(devParticles, particles->data(), particles->size());
-
-        auto afterCopyToGPU = std::chrono::high_resolution_clock::now();
-        copyToGPUTime = std::chrono::duration<float, std::milli>(afterCopyToGPU - currentTime).count();
-        currentTime = afterCopyToGPU;
-
-        integrateParticlesGPU(devParticles, particles->size(), timeStep);
-
-        computeGravitationalForcesGPU(devParticles, particles->size(), G, softening);
-
-        auto afterCompute = std::chrono::high_resolution_clock::now();
-        computeTime = std::chrono::duration<float, std::milli>(afterCompute - currentTime).count();
-        currentTime = afterCompute;
-
-        copyParticlesFromGPU(particles->data(), devParticles, particles->size());
-
-        auto endTime = std::chrono::high_resolution_clock::now();
-        copyFromGPUTime = std::chrono::duration<float, std::milli>(endTime - currentTime).count();
-        totalTime = std::chrono::duration<float, std::milli>(endTime - startTime).count();
-
-        if (enableProfiling)
-        {
-            std::cout << "CUDA Profiling [" << particles->size() << " particles]:"
-                      << " Total: " << totalTime << "ms,"
-                      << " Copy to GPU: " << copyToGPUTime << "ms,"
-                      << " Compute: " << computeTime << "ms,"
-                      << " Copy from GPU: " << copyFromGPUTime << "ms"
-                      << std::endl;
-        }
+        return;
     }
+
+    startTime = std::chrono::high_resolution_clock::now();
+    auto currentTime = startTime;
+
+    copyParticlesToGPU(devParticles, particles->data(), particles->size());
+
+    auto afterCopyToGPU = std::chrono::high_resolution_clock::now();
+    copyToGPUTime = std::chrono::duration<float, std::milli>(afterCopyToGPU - currentTime).count();
+    currentTime = afterCopyToGPU;
+
+ 
+    computeGravitationalForcesGPU(devParticles, particles->size(), G, softening);
+    integrateParticlesGPU(devParticles, particles->size(), timeStep);
+
+    auto afterCompute = std::chrono::high_resolution_clock::now();
+    computeTime = std::chrono::duration<float, std::milli>(afterCompute - currentTime).count();
+    currentTime = afterCompute;
+
+    copyParticlesFromGPU(particles->data(), devParticles, particles->size());
+
+    auto endTime = std::chrono::high_resolution_clock::now();
+    copyFromGPUTime = std::chrono::duration<float, std::milli>(endTime - currentTime).count();
+    totalTime = std::chrono::duration<float, std::milli>(endTime - startTime).count();
+
+    if (enableProfiling)
+    {
+        std::cout << "CUDA Profiling [" << particles->size() << " particles]:"
+                << " Total: " << totalTime << "ms,"
+                << " Copy to GPU: " << copyToGPUTime << "ms,"
+                << " Compute: " << computeTime << "ms,"
+                << " Copy from GPU: " << copyFromGPUTime << "ms"
+                << std::endl;
+    }
+}
 
     void enableProfilingOutput(bool enable)
     {

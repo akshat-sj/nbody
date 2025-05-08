@@ -110,7 +110,7 @@ __global__ void computeForcesKernel(ParticleGPU *particles, int numParticles, fl
         }
 
         // left remaining implementation same
-        float maxAcc = 1000.0f;
+        float maxAcc = 500.0f;
         float accMag = sqrtf(acc.x * acc.x + acc.y * acc.y + acc.z * acc.z);
 
         if (accMag > maxAcc)
@@ -125,25 +125,21 @@ __global__ void computeForcesKernel(ParticleGPU *particles, int numParticles, fl
     }
 }
 
-// CUDA part 1 for integrate leap frog
 __global__ void integrateLeapFrogKernel1(ParticleGPU *particles, int numParticles, float dt)
 {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-    // implementation practically is the same
-
-    if (idx < numParticles)
+    if (idx < numParticles) // implementation is the same as before
     {
-        if (idx == 0)
-            return;
-
         float4 vel = particles[idx].velocity;
         float4 acc = particles[idx].acceleration;
 
+    
         vel.x += acc.x * dt * 0.5f;
         vel.y += acc.y * dt * 0.5f;
         vel.z += acc.z * dt * 0.5f;
 
+  
         particles[idx].position.x += vel.x * dt;
         particles[idx].position.y += vel.y * dt;
         particles[idx].position.z += vel.z * dt;
@@ -152,17 +148,13 @@ __global__ void integrateLeapFrogKernel1(ParticleGPU *particles, int numParticle
     }
 }
 
-// CUDA part 2 for leap-frog integration
+
 __global__ void integrateLeapFrogKernel2(ParticleGPU *particles, int numParticles, float dt)
 {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-    if (idx < numParticles)
+    if (idx < numParticles ) // pretty much the same as before
     {
-        // pretty much the same as before
-        if (idx == 0)
-            return;
-
         float4 vel = particles[idx].velocity;
         float4 acc = particles[idx].acceleration;
 
@@ -170,17 +162,28 @@ __global__ void integrateLeapFrogKernel2(ParticleGPU *particles, int numParticle
         vel.y += acc.y * dt * 0.5f;
         vel.z += acc.z * dt * 0.5f;
 
+      
         float3 pos;
         pos.x = particles[idx].position.x;
         pos.y = particles[idx].position.y;
         pos.z = particles[idx].position.z;
 
         float distFromCenter = sqrtf(pos.x * pos.x + pos.y * pos.y + pos.z * pos.z);
-        if (distFromCenter > 30.0f)
+        
+        
+        if (distFromCenter > 7.0f)
         {
-            vel.x *= 0.998f;
-            vel.y *= 0.998f;
-            vel.z *= 0.998f;
+        
+            vel.x *= 0.95f;
+            vel.y *= 0.95f;
+            vel.z *= 0.95f;
+            
+          
+            float inwardFactor = 0.1f;
+            float invDist = 1.0f / fmaxf(distFromCenter, 0.001f);
+            vel.x -= pos.x * invDist * inwardFactor;
+            vel.y -= pos.y * invDist * inwardFactor;
+            vel.z -= pos.z * invDist * inwardFactor;
         }
 
         particles[idx].velocity = vel;
